@@ -23,5 +23,18 @@ class RxTest {
     fun backoffTimer() = backoffTimes
         .concatMap { wait -> Observable.timer(wait, TimeUnit.SECONDS).map { wait } }
 
+    //TODO both of these should only emit successes
+    fun normalCall() = Observable.just("") //TODO network call
+    fun backoffCall() = backoffTimer().map { "" } //TODO network call
+
+    fun merged() = normalTimer()
+        .flatMap {
+            Observable.amb(
+                listOf(
+                    normalCall(),
+                    backoffCall()
+                )
+            ).take(1)
+        }
 
 }
