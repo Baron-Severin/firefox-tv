@@ -5,28 +5,44 @@ import io.reactivex.schedulers.TestScheduler
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Test
-import org.mockito.Mockito.spy
-import org.mockito.Mockito.times
-import org.mockito.Mockito.verify
-import org.mockito.MockitoAnnotations
-import org.mockito.Spy
 import java.util.concurrent.TimeUnit
 
 class RxTest {
 
     private lateinit var testScheduler: TestScheduler
     private lateinit var rx: Rx
-    private val fakeEndpoint = object : PocketEndpoint("", null) {
-        override suspend fun getRecommendedVideos() = null
+
+    private class FakeEndpoint : PocketEndpoint("", null) {
+        var shouldSucceed = false
+        var requestCount = 0
+            private set
+
+        override suspend fun getRecommendedVideos(): List<PocketViewModel.FeedItem.Video>? {
+            requestCount++
+            return when (shouldSucceed) {
+                true -> PocketViewModel.noKeyPlaceholders
+                false -> null
+            }
+        }
     }
+
+    private val fakeEndpoint = FakeEndpoint()
 
     @Before
     fun setup() {
         testScheduler = TestScheduler()
         RxJavaPlugins.setComputationSchedulerHandler { testScheduler }
+        RxJavaPlugins.setIoSchedulerHandler { testScheduler }
 
         rx = Rx(fakeEndpoint)
     }
+
+
+
+
+
+
+
 
 
     @Test
