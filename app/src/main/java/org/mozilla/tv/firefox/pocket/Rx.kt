@@ -4,26 +4,20 @@
 
 package org.mozilla.tv.firefox.pocket
 
-import io.reactivex.Maybe
 import io.reactivex.Observable
-import io.reactivex.schedulers.Schedulers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.TimeUnit
 import kotlin.math.pow
 
 private val CACHE_UPDATE_FREQUENCY_MINUTES = 45L
 private val CACHE_UPDATE_FREQUENCY_SECONDS = TimeUnit.MINUTES.toSeconds(CACHE_UPDATE_FREQUENCY_MINUTES)
-private val CACHE_UPDATE_FREQUENCY_MILLIS = TimeUnit.MINUTES.toMillis(CACHE_UPDATE_FREQUENCY_MINUTES)
 
 class Rx(val pocketEndpoint: PocketEndpoint) {
 
     val backoffTimes = Observable.range(1, Integer.MAX_VALUE)
         .map { 2.toDouble().pow(it).toLong() }
-        .takeUntil { it > CACHE_UPDATE_FREQUENCY_SECONDS }
+        .takeWhile { it < (CACHE_UPDATE_FREQUENCY_SECONDS / 2) }
 
     fun normalTimer() = Observable.interval(0, CACHE_UPDATE_FREQUENCY_SECONDS, TimeUnit.SECONDS)
         .map { "NORMAL: $it" }
@@ -33,13 +27,9 @@ class Rx(val pocketEndpoint: PocketEndpoint) {
                 .map { "BACKOFF: $it" }
         }
 
-    //TODO both of these should only emit successes
     fun normalCall(pocketEndpoint: PocketEndpoint) = pocketEndpoint.getVidsObs()
     fun backoffCall(pocketEndpoint: PocketEndpoint) = backoffTimer().flatMap { pocketEndpoint.getVidsObs() }
 
-    /**
-     * only visible for testing.  otherwise use
-     */
     fun merged() = normalTimer()
         .flatMap {
             Observable.concat(normalCall(pocketEndpoint), backoffCall(pocketEndpoint))
