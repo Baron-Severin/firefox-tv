@@ -42,14 +42,14 @@ class RxTest {
         // 45 minutes * 60 seconds == 2700
         // 2 + 4 + 8 + 16 + 32 + 64 + 128 + 256 + 512 + 1024 == 2046
         val expected = listOf<Long>(2, 4, 8, 16, 32, 64, 128, 256, 512, 1024)
-        val actual = rx.backoffTimes.toList().blockingGet().toList()
+        val actual = Rx.Internals.backoffTimes().toList().blockingGet().toList()
 
         assertEquals(expected, actual)
     }
 
     @Test
     fun `WHEN normal timer is started THEN it should immediately emit`() {
-        val testNormal = rx.normalTimer().test()
+        val testNormal = Rx.Internals.normalTimer().test()
 
         testScheduler.advanceTimeBy(1, TimeUnit.MILLISECONDS)
         assertEquals(1, testNormal.events.first().size)
@@ -57,7 +57,7 @@ class RxTest {
 
     @Test
     fun `GIVEN normal timer has been started WHEN 45 minutes pass THEN it should emit again`() {
-        val testNormal = rx.normalTimer().test()
+        val testNormal = Rx.Internals.normalTimer().test()
 
         testScheduler.advanceTimeTo(44, TimeUnit.MINUTES)
         assertEquals(1, testNormal.events.first().size)
@@ -74,8 +74,8 @@ class RxTest {
 
     @Test
     fun `WHEN backoff timer has started THEN it should emit after pauses set by backoffTimes`() {
-        val testBackoff = rx.backoffTimer().test()
-        val backoffTimes = rx.backoffTimes.toList().blockingGet().toList()
+        val testBackoff = Rx.Internals.backoffTimer().test()
+        val backoffTimes = Rx.Internals.backoffTimes().toList().blockingGet().toList()
 
         var expectedEmissions = 0
         backoffTimes.forEach { wait ->

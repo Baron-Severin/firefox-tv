@@ -4,9 +4,14 @@
 
 package org.mozilla.tv.firefox.pocket
 
+import android.support.annotation.VisibleForTesting
 import io.reactivex.Observable
-import kotlinx.coroutines.async
+import io.reactivex.Single
+import io.reactivex.schedulers.Schedulers
 import kotlinx.coroutines.runBlocking
+import org.mozilla.tv.firefox.pocket.Rx.Internals.backoffRequests
+import org.mozilla.tv.firefox.pocket.Rx.Internals.normalTimer
+import org.mozilla.tv.firefox.pocket.Rx.Internals.singleRequest
 import java.util.concurrent.TimeUnit
 import kotlin.math.pow
 
@@ -15,52 +20,90 @@ private val CACHE_UPDATE_FREQUENCY_SECONDS = TimeUnit.MINUTES.toSeconds(CACHE_UP
 
 class Rx(val pocketEndpoint: PocketEndpoint) {
 
-    val backoffTimes = Observable.range(1, Integer.MAX_VALUE)
-        .map { 2.toDouble().pow(it).toLong() }
-        .takeWhile { it < (CACHE_UPDATE_FREQUENCY_SECONDS / 2) }
-
-    fun normalTimer() = Observable.interval(0, CACHE_UPDATE_FREQUENCY_SECONDS, TimeUnit.SECONDS)
-        .map { "NORMAL: $it" }
-    fun backoffTimer() = backoffTimes
-        .concatMap {
-            Observable.timer(it, TimeUnit.SECONDS)
-                .map { "BACKOFF: $it" }
-        }
-
-    fun normalCall(pocketEndpoint: PocketEndpoint) = pocketEndpoint.getVidsObs()
-    fun backoffCall(pocketEndpoint: PocketEndpoint) = backoffTimer().flatMap { pocketEndpoint.getVidsObs() }
-
-    fun merged() = normalTimer()
+    /**
+     * Makes one network request upon subscription. If this fails, more requests
+     * will be made on an exponential backoff.
+     *
+     * Follow up requests will be made every 45 minutes, regardless of previous
+     * success or failure.
+     */
+    fun merged(): Observable<List<PocketViewModel.FeedItem.Video>> = normalTimer()
         .flatMap {
-            Observable.concat(normalCall(pocketEndpoint), backoffCall(pocketEndpoint))
-                .filter { it is PocketRequest.Success }
-                .map { (it as PocketRequest.Success).videos }
+            Observable.concat(singleRequest(pocketEndpoint).toObservable(), backoffRequests(pocketEndpoint))
+                .filter { it is Internals.PocketResponse.Success }
+                .map { (it as Internals.PocketResponse.Success).videos }
                 .take(1)
         }
 
-    sealed class PocketRequest {
-        data class Success(val videos: List<PocketViewModel.FeedItem.Video>) : PocketRequest()
-        object Failure : PocketRequest() {
-            override fun toString() = "Failed Request"
-        }
-    }
+    /**
+     * Contains data only available for testing.
+     *
+     * Before introducing this class, the constant [VisibleForTesting]
+     * annotations made the file difficult to read.
+     */
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    object Internals {
 
-    private fun PocketEndpoint.getVidsObs(): Observable<PocketRequest> {
-        val endpoint = this
-        return Observable.create { observableEmitter ->
-            runBlocking {
-                val videos = async { endpoint.getRecommendedVideos() }.await()
-                when (videos) {
-                    null -> {
-                        observableEmitter.onNext(PocketRequest.Failure)
-                        observableEmitter.onComplete()
-                    }
-                    else -> {
-                        observableEmitter.onNext(PocketRequest.Success(videos))
-                        observableEmitter.onComplete()
-                    }
-                }
+        /**
+         * Generates an observable of [Long]s that together represent an
+         * exponential backoff. Values summed will be smaller than
+         * [CACHE_UPDATE_FREQUENCY_SECONDS]
+         */
+        fun backoffTimes(): Observable<Long> = Observable.range(1, Integer.MAX_VALUE)
+            .map { 2.toDouble().pow(it).toLong() }
+            .takeWhile { it < (CACHE_UPDATE_FREQUENCY_SECONDS / 2) }
+
+        /**
+         * Emits one value upon subscription, and another every 45 minutes
+         */
+        fun normalTimer(): Observable<Long> = Observable
+            .interval(0, CACHE_UPDATE_FREQUENCY_SECONDS, TimeUnit.SECONDS)
+
+        /**
+         * Waits for the duration of each value in seconds, emits it, then
+         * continues
+         */
+        fun backoffTimer(): Observable<Long> = backoffTimes()
+            .concatMap {
+                Observable.timer(it, TimeUnit.SECONDS)
             }
+
+        /**
+         * Makes a single network request and returns its contents
+         */
+        fun singleRequest(pocketEndpoint: PocketEndpoint): Single<PocketResponse> =
+            pocketEndpoint.getRecommendedVideosAsObservable()
+
+        /**
+         * Makes a series of network requests, according to the schedule set by [backoffTimer]
+         */
+        fun backoffRequests(pocketEndpoint: PocketEndpoint): Observable<PocketResponse> = backoffTimer()
+            .flatMapSingle { pocketEndpoint.getRecommendedVideosAsObservable() }
+
+        /**
+         * Classifies network responses as either [Success] or [Failure]
+         *
+         * See "Either" type from functional programming
+         */
+        sealed class PocketResponse {
+            data class Success(val videos: List<PocketViewModel.FeedItem.Video>) : PocketResponse()
+            object Failure : PocketResponse()
+        }
+
+        /**
+         * Wraps a coroutine call so that values may be emitted as [Observable]s
+         */
+        private fun PocketEndpoint.getRecommendedVideosAsObservable(): Single<PocketResponse> {
+            val endpoint = this
+            fun wrapResponse(): PocketResponse {
+                    val videos = runBlocking { endpoint.getRecommendedVideos() }
+                    return when (videos) {
+                        null -> PocketResponse.Failure
+                        else -> PocketResponse.Success(videos)
+                    }
+            }
+            return Single.fromCallable { wrapResponse() }
+                .subscribeOn(Schedulers.io())
         }
     }
 }
