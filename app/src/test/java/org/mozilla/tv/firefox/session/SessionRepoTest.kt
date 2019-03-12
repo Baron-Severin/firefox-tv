@@ -3,8 +3,12 @@ package org.mozilla.tv.firefox.session
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
+import io.mockk.just
+import io.mockk.mockk
+import io.mockk.runs
 import mozilla.components.browser.session.Session
 import mozilla.components.browser.session.SessionManager
+import mozilla.components.concept.engine.EngineSession
 import mozilla.components.feature.session.SessionUseCases
 import org.junit.Before
 import org.junit.Test
@@ -24,17 +28,35 @@ class SessionRepoTest {
     @MockK private lateinit var sessionUseCases: SessionUseCases
     @MockK private lateinit var turboMode: TurboMode
     @MockK private lateinit var session: Session
-    @MockK private lateinit var goBackUseCase: SessionUseCases.GoBackUseCase
+    private lateinit var goBackUseCase: SessionUseCases.GoBackUseCase
 
     @Before
     fun setup() {
         MockKAnnotations.init(this)
+
+        `fixes error`()
 
         every { sessionManager.selectedSession } answers { session }
         every { sessionUseCases.goBack } answers { goBackUseCase }
         every { session.fullScreenMode } answers { false }
 
         repo = SessionRepo(sessionManager, sessionUseCases, turboMode)
+    }
+
+    private fun `fixes error`() {
+        // GoBackUseCase#invoke uses an internal field as a default value (sessionManager.selectedSession).
+        // When GoBackUseCase is mocked, calling #invoke stills attempts to access this field, causing a
+        // crash. This can be corrected by either 1) modifying the calling code to provide a session
+        // manually (defeats the purpose of default arguments, modifies production code for the sake of
+        // tests, and is unclear to the reader), or 2) constructing an actual object and providing fake
+        // dependencies as required.
+        //
+        // There must be a better way to approach this, does anyone have any ideas?
+        goBackUseCase = SessionUseCases.GoBackUseCase::class.constructors.first().call(sessionManager)
+
+        val engineSession = mockk<EngineSession>()
+        every { sessionManager.getOrCreateEngineSession(any()) } answers { engineSession }
+        every { engineSession.goBack() } just runs
     }
 
     @Test
