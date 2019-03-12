@@ -168,6 +168,9 @@ dependencies {
 
     androidTestImplementation "androidx.test.uiautomator:uiautomator:$uiautomator_version"
 
+    // Reproduced using both Mockito and MockK
+    testImplementation "io.mockk:mockk:1.9.1"
+
     androidTestImplementation "androidx.test.espresso:espresso-core:$espresso_version"
     androidTestImplementation("androidx.test.espresso:espresso-contrib:$espresso_version")
     androidTestImplementation "androidx.test.espresso:espresso-idling-resource:$espresso_version"

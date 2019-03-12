@@ -112,7 +112,7 @@ class SessionRepo(
 
         if (session.canGoBack) {
             exitFullScreenIfPossible()
-            sessionUseCases.goBack.invoke()
+            sessionUseCases.goBack.invoke() // Fails on this line
             TelemetryIntegration.INSTANCE.browserBackControllerEvent()
             return true
         }
