@@ -30,6 +30,7 @@ import kotlinx.android.synthetic.main.fragment_navigation_overlay_top_nav.*
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
 import io.reactivex.rxkotlin.addTo
+import kotlinx.android.synthetic.main.hint_bar.hintBarContainer
 import kotlinx.android.synthetic.main.pocket_video_mega_tile.*
 import kotlinx.coroutines.Job
 import org.mozilla.tv.firefox.MainActivity
@@ -43,6 +44,8 @@ import org.mozilla.tv.firefox.ext.isVisible
 import org.mozilla.tv.firefox.ext.isVoiceViewEnabled
 import org.mozilla.tv.firefox.ext.serviceLocator
 import org.mozilla.tv.firefox.ext.updateLayoutParams
+import org.mozilla.tv.firefox.hint.HintHelper
+import org.mozilla.tv.firefox.hint.HintViewModel
 import org.mozilla.tv.firefox.pinnedtile.PinnedTileAdapter
 import org.mozilla.tv.firefox.pinnedtile.PinnedTileViewModel
 import org.mozilla.tv.firefox.pocket.PocketVideoFragment
@@ -128,6 +131,7 @@ class NavigationOverlayFragment : Fragment() {
     private lateinit var toolbarViewModel: ToolbarViewModel
     private lateinit var pinnedTileViewModel: PinnedTileViewModel
     private lateinit var pocketViewModel: PocketViewModel
+    private lateinit var hintViewModel: HintViewModel
 
     private lateinit var tileAdapter: PinnedTileAdapter
 
@@ -144,6 +148,7 @@ class NavigationOverlayFragment : Fragment() {
         toolbarViewModel = FirefoxViewModelProviders.of(this).get(ToolbarViewModel::class.java)
         pinnedTileViewModel = FirefoxViewModelProviders.of(this).get(PinnedTileViewModel::class.java)
         pocketViewModel = FirefoxViewModelProviders.of(this).get(PocketViewModel::class.java)
+        hintViewModel = FirefoxViewModelProviders.of(this).get(OverlayHintViewModel::class.java)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -207,6 +212,7 @@ class NavigationOverlayFragment : Fragment() {
         super.onStart()
         observePocketState()
             .addTo(compositeDisposable)
+        compositeDisposable.addAll(*HintHelper.observeHintVM(hintViewModel, hintBarContainer))
     }
 
     override fun onStop() {
