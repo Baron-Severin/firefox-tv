@@ -137,7 +137,8 @@ class WebRenderFragment : EngineViewLifecycleFragment(), Session.Observer {
             this,
             cursorParent = layout.browserFragmentRoot,
             view = layout.cursorView,
-            viewModel = ViewModelProviders.of(this, viewModelFactory).get(CursorViewModel::class.java)
+            viewModel = ViewModelProviders.of(this, viewModelFactory).get(CursorViewModel::class.java),
+            cursorEventRepo = context.serviceLocator.cursorEventRepo
         ).also {
             lifecycle.addObserver(it)
         }

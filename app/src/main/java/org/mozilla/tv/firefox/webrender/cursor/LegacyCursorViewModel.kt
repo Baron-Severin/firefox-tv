@@ -174,6 +174,23 @@ class LegacyCursorViewModel(
         updateLoop = null
         vel = 0f // Stop moving.
     }
+
+    /**
+     * Will return the [Direction] of an edge near the cursor, or null if none.
+     *
+     * When in the corner, will return [Direction.UP] or [Direction.DOWN]
+     */
+    fun getEdgeOfScreenNearCursor(): Direction? {
+        val margin = 1
+
+        return when {
+            pos.y < margin -> Direction.UP
+            pos.y > maxBounds.y - margin -> Direction.DOWN
+            pos.x < margin -> Direction.LEFT
+            pos.x > maxBounds.x - margin -> Direction.RIGHT
+            else -> null
+        }
+    }
 }
 
 private fun clampPos(pos: PointF, maxBounds: PointF) {

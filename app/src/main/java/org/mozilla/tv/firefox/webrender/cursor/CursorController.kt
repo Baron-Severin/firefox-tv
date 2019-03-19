@@ -4,15 +4,18 @@
 
 package org.mozilla.tv.firefox.webrender.cursor
 
+import android.graphics.PointF
+import android.view.KeyEvent
+import android.view.View
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.Observer
 import androidx.lifecycle.OnLifecycleEvent
-import android.graphics.PointF
-import android.view.KeyEvent
-import android.view.View
 import kotlinx.coroutines.Job
+import org.mozilla.tv.firefox.ext.pageBottomReached
+import org.mozilla.tv.firefox.ext.pageTopReached
 import org.mozilla.tv.firefox.ext.scrollByClamped
+import org.mozilla.tv.firefox.utils.Direction
 import org.mozilla.tv.firefox.webrender.WebRenderFragment
 
 private const val MAX_SCROLL_VELOCITY = 13
@@ -31,7 +34,8 @@ private const val MAX_SCROLL_VELOCITY = 13
 class CursorController private constructor(
     // Our lifecycle is shorter than BrowserFragment, so we can hold a reference.
     private val webRenderFragment: WebRenderFragment,
-    private val view: CursorView
+    private val view: CursorView,
+    private val cursorEventRepo: CursorEventRepo
 ) : LifecycleObserver {
 
     private val uiLifecycleCancelJob = Job()
@@ -56,6 +60,7 @@ class CursorController private constructor(
                 KeyEvent.ACTION_UP -> legacyViewModel.onDirectionKeyUp(dir)
                 else -> Unit
             }
+            dispatchCursorEvent(dir)
         }, onSelectKey = { event ->
             viewModel.onSelectKeyEvent(event.action, legacyViewModel.pos)
             view.updateCursorPressedState(event)
@@ -103,14 +108,36 @@ class CursorController private constructor(
         webRenderFragment.engineView?.scrollByClamped(scrollX, scrollY)
     }
 
+    private fun dispatchCursorEvent(scrollDirection: Direction) {
+        val nearbyEdge = legacyViewModel.getEdgeOfScreenNearCursor()
+        val webView = webRenderFragment.engineView
+        val scrolledToEdge = when {
+            nearbyEdge == Direction.UP && webView?.pageTopReached() == true -> Direction.UP
+            nearbyEdge == Direction.DOWN && webView?.pageBottomReached() == true -> Direction.DOWN
+            else -> null
+        }
+        println("SEVTEST: nearbyEdge: $nearbyEdge, topReached: ${webView?.pageTopReached()}, bottomReached: ${webView?.pageBottomReached()}, scrolledToEdge: $scrolledToEdge")
+
+
+
+        val event = if (scrolledToEdge != null) {
+            CursorEventRepo.CursorEvent.ScrolledToEdge(scrolledToEdge)
+        } else {
+            CursorEventRepo.CursorEvent.CursorMoved(scrollDirection)
+        }
+        println("SEVTEST: event: $event")
+        cursorEventRepo.scrollEvents.onNext(event)
+    }
+
     companion object {
         fun newInstanceOnCreateView(
             webRenderFragment: WebRenderFragment,
             cursorParent: View,
             view: CursorView,
-            viewModel: CursorViewModel
+            viewModel: CursorViewModel,
+            cursorEventRepo: CursorEventRepo
         ): CursorController {
-            return CursorController(webRenderFragment, view).apply {
+            return CursorController(webRenderFragment, view, cursorEventRepo).apply {
                 initOnCreateView(viewModel, cursorParent)
             }
         }
