@@ -18,6 +18,7 @@ import org.mozilla.tv.firefox.ScreenControllerStateMachine.Transition
 import org.mozilla.tv.firefox.ext.serviceLocator
 import org.mozilla.tv.firefox.navigationoverlay.NavigationOverlayFragment
 import org.mozilla.tv.firefox.channels.SettingsScreen
+import org.mozilla.tv.firefox.ext.application
 import org.mozilla.tv.firefox.session.SessionRepo
 import org.mozilla.tv.firefox.settings.SettingsFragment
 import org.mozilla.tv.firefox.telemetry.MenuInteractionMonitor
@@ -45,13 +46,18 @@ class ScreenController(private val sessionRepo: SessionRepo) {
      * We DO NOT use the Fragment backstack so that all transitions are controlled in the same manner, and we
      * don't end up mixing backstack actions with show/hide.
      */
-    fun setUpFragmentsForNewSession(fragmentManager: FragmentManager, session: Session) {
+    fun setUpFragmentsForNewSession(fragmentManager: FragmentManager, session: Session, context: Context) {
         val renderFragment = WebRenderFragment.createForSession(session)
+        val navOverlay = NavigationOverlayFragment()
+
+        (context.application).refWatcher.watch(renderFragment)
+        (context.application).refWatcher.watch(navOverlay)
+
         fragmentManager
             .beginTransaction()
             .add(R.id.container_web_render, renderFragment, WebRenderFragment.FRAGMENT_TAG)
             // We add NavigationOverlayFragment last so that it takes focus
-            .add(R.id.container_navigation_overlay, NavigationOverlayFragment(), NavigationOverlayFragment.FRAGMENT_TAG)
+            .add(R.id.container_navigation_overlay, navOverlay, NavigationOverlayFragment.FRAGMENT_TAG)
             .commitNow()
 
         _currentActiveScreen.onNext(ActiveScreen.NAVIGATION_OVERLAY)

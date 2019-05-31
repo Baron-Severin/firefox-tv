@@ -11,6 +11,7 @@ import android.view.ViewGroup
 import android.widget.ImageButton
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
+import com.squareup.leakcanary.LeakCanary
 import io.sentry.Sentry
 import kotlinx.android.synthetic.main.settings_screen_buttons.view.cancel_action
 import kotlinx.android.synthetic.main.settings_screen_buttons.view.confirm_action
@@ -98,6 +99,7 @@ class SettingsFragment : Fragment() {
 
         fun newInstance(type: SettingsScreen): SettingsFragment {
             return SettingsFragment().apply {
+                LeakCanary.installedRefWatcher().watch(this)
                 arguments = Bundle().apply {
                     putString(KEY_SETTINGS_TYPE, type.toString())
                 }

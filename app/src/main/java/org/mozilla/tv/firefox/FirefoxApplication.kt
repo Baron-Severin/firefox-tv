@@ -7,6 +7,8 @@ package org.mozilla.tv.firefox
 import android.os.StrictMode
 import androidx.annotation.VisibleForTesting
 import android.webkit.WebSettings
+import com.squareup.leakcanary.LeakCanary
+import com.squareup.leakcanary.RefWatcher
 import mozilla.components.service.glean.Glean
 import mozilla.components.support.ktx.android.content.runOnlyInMainProcess
 import org.mozilla.tv.firefox.components.locale.LocaleAwareApplication
@@ -27,6 +29,9 @@ open class FirefoxApplication : LocaleAwareApplication() {
     @VisibleForTesting // See TestFocusApplication for why this method exists.
     protected open fun getSystemUserAgent(): String = WebSettings.getDefaultUserAgent(this)
 
+
+    lateinit var refWatcher : RefWatcher
+
     /**
      * Reference to components needed by the application.
      *
@@ -40,6 +45,13 @@ open class FirefoxApplication : LocaleAwareApplication() {
 
     override fun onCreate() {
         super.onCreate()
+
+        if (LeakCanary.isInAnalyzerProcess(this)) { // TODO don't push this
+            // This process is dedicated to LeakCanary for heap analysis.
+            // You should not init your app in this process.
+            return
+        }
+        refWatcher = LeakCanary.install(this)
 
         // If this is not the main process then do not continue with the initialization here. Everything that
         // follows only needs to be done in our app's main process and should not be done in other processes like

@@ -14,6 +14,7 @@ import android.util.Log
 import android.view.KeyEvent
 import android.view.View
 import androidx.lifecycle.Observer
+import com.squareup.leakcanary.LeakCanary
 import io.sentry.Sentry
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.overlay_debug.debugLog
@@ -76,7 +77,9 @@ class MainActivity : LocaleAwareAppCompatActivity(), OnUrlEnteredListener, Media
         webRenderComponents.sessionManager.getOrCreateEngineSession().resetView(this@MainActivity)
 
         val screenController = serviceLocator.screenController
-        screenController.setUpFragmentsForNewSession(supportFragmentManager, session)
+        screenController.setUpFragmentsForNewSession(supportFragmentManager, session, this)
+
+        (application as FirefoxApplication).refWatcher.watch(this)
 
         serviceLocator.intentLiveData.observe(this, Observer {
             it?.consume {
