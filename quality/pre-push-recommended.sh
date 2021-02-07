@@ -17,8 +17,9 @@
         checkstyle \
         ktlint \
         pmd \
-        detektCheck \
-        testAmazonWebViewDebug
+        detekt \
+        assembleAndroidTest \
+        testSystemDebug
 
 # Tasks omitted because they take a long time to run:
 # - unit test on all variants

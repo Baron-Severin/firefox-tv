@@ -18,6 +18,7 @@ Guidelines](https://www.mozilla.org/en-US/about/governance/policies/participatio
 * [Guide to Contributing][contribute] (**new contributors start here!**)
 * Open issues: https://github.com/mozilla-mobile/firefox-tv/issues
   * [`good first issues`][good first] | [`help wanted`][help]
+  * [File a security issue][sec issue]
 * Project wiki: https://github.com/mozilla-mobile/firefox-tv/wiki
 * IRC: [#focus (irc.mozilla.org)](https://wiki.mozilla.org/IRC) | [view logs](https://mozilla.logbot.info/focus/);
 we're available Monday-Friday, GMT and PST working hours.
@@ -35,10 +36,10 @@ we're available Monday-Friday, GMT and PST working hours.
 2. Import the project into Android Studio or build on the command line:
 
   ```shell
-  ./gradlew clean app:assembleAmazonWebviewDebug
+  ./gradlew clean app:assembleSystemDebug
   ```
 
-3. Make sure to select the right build variant in Android Studio: **amazonWebviewDebug**
+3. Make sure to select the right build variant in Android Studio: **systemDebug**
 
 ### Running
 It is recommended to test directly on a Fire TV: see the [developer guide][dev guide] for more info.
@@ -52,7 +53,32 @@ can be connected to a Fire TV at a time. Note that while you can install on an
 Android TV emulator, the behavior is different from Fire TV's and should not be
 relied upon.
 
-When using an emulator, you can press `cmd+m` to simulate a menu button press.
+If using an emulator, we recommend the Android TV device image: either 720p or
+1080p is fine. API 22 (Stick) and 25 (4K) are best. You can press `cmd+m` to
+simulate a menu button press.
+
+### Unit Testing
+To run a reasonable subset of the unit tests, we recommend:
+```sh
+./gradlew testSystemDebug
+```
+
+To generate code coverage reports, run:
+```sh
+./gradlew -Pcoverage jacocoDebugTestReport
+```
+
+Reports can be found at `app/build/jacoco/jacoco<buildVariant>TestReport/html/index.html`
+
+### UI Testing
+To run all UI tests, follow these steps
+
+1. Connect to one device
+  - Either use `adb connect` for a real device, or start an emulator instance using AVD
+  - Prefer a real device (emulators will fail some tests)
+  - The next step will fail if you are connected to more than one device
+2. Run `./gradlew connectedSystemDebugAndroidTest` from the command line
+  - Aliasing this command is recommended
 
 ### Pre-push hooks
 To reduce review turn-around time, we'd like all pushes to run tests locally. We'd
@@ -70,24 +96,37 @@ To push without running the pre-push hook (e.g. doc updates):
 git push <remote> --no-verify
 ```
 
-### Building with API keys
+### Building release builds
+Release builds can be built in Android Studio or via the command line:
+```sh
+./gradlew assembleSystemRelease # unsigned build
+```
+
+These builds will run validation checks that the build is ready for a production release. If you
+do not want to run these checks (e.g. building release builds for local debugging), you can add this
+argument:
+```sh
+./gradlew assembleSystemRelease -PnoValidate
+```
+
+#### API keys
 Certain services require an API key, so you'll need to build with the key to use them in the apk.
 
 1. To build with the API key (for services such as Sentry), add a `<project-dir>/.<service>_debug`
 file with your key, for example, `<project-dir>/.sentry_dsn_debug`
 
-    1. To enable Sentry on Debug builds, additionally replace the `DataUploadPreference.isEnabled`
-value with true (upload is disabled by default in dev builds).
+    1. To enable Sentry on Debug builds, additionally replace the `isEnabled` value check in
+    `SentryIntegration` value with true (upload is disabled by default in dev builds).
 
 2. Verify the key add was successful. The gradle output is the only way to verify this (although
 it won't indicate if the key is valid). You will see a message in the gradle output
 indicating the key was added:
 
-`Sentry DSN (amazonWebviewDebug): Added from /Users/mcomella/dev/moz/firefox-tv/.sentry_dsn_debug`
+`Sentry DSN (debug): Added from /Users/mcomella/dev/moz/firefox-tv/.sentry_dsn_debug`
 
 As opposed to:
 
-`Sentry DSN (amazonWebviewDebug): X_X`
+`Sentry DSN (debug): X_X`
 
 API services currently supported are:
 * sentry_dsn
@@ -104,3 +143,4 @@ API services currently supported are:
 [contribute]: https://github.com/mozilla-mobile/shared-docs/blob/master/android/CONTRIBUTING.md
 [good first]: https://github.com/mozilla-mobile/firefox-tv/labels/good%20first%20issue
 [help]: https://github.com/mozilla-mobile/firefox-tv/labels/help%20wanted
+[sec issue]: https://bugzilla.mozilla.org/enter_bug.cgi?assigned_to=nobody%40mozilla.org&bug_file_loc=http%3A%2F%2F&bug_ignored=0&bug_severity=normal&bug_status=NEW&cf_fx_iteration=---&cf_fx_points=---&component=Security%3A%20General&contenttypemethod=autodetect&contenttypeselection=text%2Fplain&defined_groups=1&flag_type-4=X&flag_type-607=X&flag_type-791=X&flag_type-800=X&flag_type-803=X&form_name=enter_bug&groups=firefox-core-security&maketemplate=Remember%20values%20as%20bookmarkable%20template&op_sys=Unspecified&priority=--&product=Firefox%20for%20FireTV&rep_platform=Unspecified&target_milestone=---&version=unspecified

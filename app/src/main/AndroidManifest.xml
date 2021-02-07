@@ -4,12 +4,10 @@
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           xmlns:tools="http://schemas.android.com/tools"
-          package="org.mozilla.focus">
+          package="org.mozilla.tv.firefox">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" /> <!-- Used by sentry. -->
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT" />
 
     <!-- Required for media playback voice control.
            https://developer.amazon.com/blogs/appstore/post/623addd5-6184-4e7f-a969-123a653cfb1a/implementing-voice-control-with-the-media-session-api-on-amazon-fire-tv -->
@@ -18,6 +16,7 @@
     <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
     <uses-feature android:name="android.software.leanback" android:required="true" />
 
+    <!-- Attribute usesCleartextTraffic requires API 23+, tools:ignore="UnusedAttribute" for lint check-->
     <application
         android:allowBackup="false"
         android:banner="@mipmap/app_banner"
@@ -25,10 +24,12 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
-        android:name=".FocusApplication">
+        android:name=".FirefoxApplication"
+        android:usesCleartextTraffic="true"
+        tools:ignore="UnusedAttribute">
 
         <provider
-            android:name="android.support.v4.content.FileProvider"
+            android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
@@ -43,8 +44,14 @@
             android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
 
             <intent-filter>
@@ -72,14 +79,11 @@
                 <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
-
-        <activity android:name=".browser.InfoActivity"
-                  android:theme="@style/InfoTheme"/>
-
-        <activity android:name=".OnboardingActivity"
+        
+        <activity android:name=".onboarding.OnboardingActivity"
                   android:theme="@style/AppTheme"/>
 
-        <activity android:name=".home.pocket.PocketOnboardingActivity"
+        <activity android:name=".pocket.PocketOnboardingActivity"
                   android:theme="@style/AppTheme.Transparent"/>
 
         <!-- Allows MediaSessionCallbacks to be called while a voice command is active. Without
@@ -106,6 +110,13 @@
         <meta-data
             android:name="android.webkit.WebView.MetricsOptOut"
             android:value="true" />
+
+        <!-- Turn of temporarily #1504
+        <meta-data
+            android:name="whisperplay"
+            android:resource="@xml/whisperplay"/>
+            -->
+
     </application>
 
 </manifest>

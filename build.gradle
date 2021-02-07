@@ -1,22 +1,38 @@
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 buildscript {
-    ext.support_libraries_version = '27.1.1'
-    ext.architecture_components_version = '1.1.1'
-    ext.espresso_version = '3.0.1'
-    ext.kotlin_version = '1.2.41'
-    ext.moz_components_version = '0.13'
-    ext.constrained_layout_version = '1.1.0'
-    ext.kotlin_coroutines_version = '0.22.5'
+    ext.androidx_version = '1.0.0'
+    ext.architecture_components_version = '2.0.0'
+    ext.kotlin_version = '1.3.0'
+    ext.moz_components_version = '0.45.0'
+
+    ext.robolectric_version = '4.0.2' // required for SDK 28.
+
+    // Support library test dependencies
+    // - List of artifacts: https://developer.android.com/training/testing/set-up-project#android-test-dependencies
+    // - Keep pinned to tested versions (in release notes): https://developer.android.com/jetpack/androidx/releases/archive/test
+    ext.test_core = '1.1.0'
+    ext.test_runner = '1.1.1'
+    ext.test_rules = ext.test_runner
+    ext.test_orchestrator = '1.1.1'
+    ext.espresso_version = '3.1.1'
+    ext.uiautomator_version = '2.2.0'
+    ext.junit = "1.1.0"
 
     repositories {
-        jcenter()
         google()
+        maven {
+            url "https://maven.mozilla.org/maven2"
+        }
+        jcenter()
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.1.2'
-        classpath 'com.dicedmelon.gradle:jacoco-android:0.1.3'
+        // If you ever see strange Gradle behavior that looks related to the version,
+        // double check that this matches build.gradle.kts
+        classpath 'com.android.tools.build:gradle:3.3.1'
 
         classpath 'org.ajoberstar:grgit:1.5.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
@@ -27,23 +43,23 @@ buildscript {
 }
 
 plugins {
-    id "io.gitlab.arturbosch.detekt" version "1.0.0.RC5-6"
-    id "org.jetbrains.kotlin.kapt" version "1.2.0"
+    id "io.gitlab.arturbosch.detekt" version "1.0.0.RC9.2"
 }
 
 detekt {
-    version = "1.0.0.RC6-4"
-    profile("main") {
-        input = "$projectDir"
-        config = "$projectDir/quality/detekt.yml"
-        filters = ".*test.*,.*/resources/.*,.*/tmp/.*"
-    }
+    toolVersion = "1.0.0.RC9.2"
+    input = files("$projectDir")
+    config = files("$projectDir/quality/detekt.yml")
+    filters = ".*test.*,.*/resources/.*,.*/tmp/.*"
 }
 
 allprojects {
     repositories {
-        jcenter()
+        maven {
+            url "https://maven.mozilla.org/maven2"
+        }
         google()
+        jcenter()
     }
 }
 

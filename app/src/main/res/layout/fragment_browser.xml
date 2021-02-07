@@ -14,7 +14,7 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <org.mozilla.focus.widget.ResizableKeyboardCoordinatorLayout
+        <org.mozilla.tv.firefox.widget.ResizableKeyboardCoordinatorLayout
             app:viewToHideWhenActivated="@+id/erase"
             android:layout_marginTop="0dp"
             android:id="@+id/main_content"
@@ -23,15 +23,17 @@
             android:orientation="vertical"
             android:clipChildren="false">
 
-            <org.mozilla.focus.iwebview.IWebView
-                android:id="@+id/webview"
+            <mozilla.components.concept.engine.EngineView
+                android:id="@+id/engineView"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:scrollbarThumbVertical="@drawable/scrollbar_thumb">
-                <requestFocus />
-            </org.mozilla.focus.iwebview.IWebView>
+                    <requestFocus />
+            </mozilla.components.concept.engine.EngineView>
 
-        </org.mozilla.focus.widget.ResizableKeyboardCoordinatorLayout>
+            <include layout="@layout/hint_bar"/>
+
+        </org.mozilla.tv.firefox.widget.ResizableKeyboardCoordinatorLayout>
     </LinearLayout>
 
     <FrameLayout
@@ -41,7 +43,7 @@
         android:background="@android:color/black"
         android:visibility="gone" />
 
-    <org.mozilla.focus.browser.cursor.CursorView
+    <org.mozilla.tv.firefox.webrender.cursor.CursorView
         android:id="@+id/cursorView"
         android:layout_width="@dimen/remote_cursor_size"
         android:layout_height="@dimen/remote_cursor_size"
@@ -50,19 +52,12 @@
         android:scaleType="centerInside"
         />
 
-    <org.mozilla.focus.browser.FirefoxProgressBar
+    <org.mozilla.tv.firefox.webrender.FirefoxProgressBar
         android:id="@+id/progressBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:focusable="false"
         android:descendantFocusability="blocksDescendants"
-        />
-
-    <org.mozilla.focus.browser.BrowserNavigationOverlay
-        android:id="@+id/browserOverlay"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="gone"
         />
 </FrameLayout>
